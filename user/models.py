@@ -19,3 +19,4 @@ class User(models.Model):
     token = models.CharField(max_length=256, default="")
     token_exp_time = models.DateTimeField(default=django.utils.timezone.now)
     bio = models.CharField(max_length=128, default='bio')
+    sign_up_date = models.DateTimeField(auto_now_add=True)
