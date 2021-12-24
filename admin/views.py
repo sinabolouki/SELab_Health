@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta, time
 import django
 from django.http import HttpResponse
-from rest_framework import viewsets
+from rest_framework import viewsets, fields, serializers
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
+from drf_spectacular.types import OpenApiTypes
 
 from user.models import User
 from prescription.models import Prescription
@@ -9,7 +11,13 @@ from prescription.models import Prescription
 from .serializers import UserSerializer
 
 class DailyStats(viewsets.ViewSet):
-
+    @extend_schema(
+        request=inline_serializer("daily_status", {'token': fields.CharField(default='token')}),
+        description="get daily status",
+        responses={'200': inline_serializer('result', {'new_doctors':UserSerializer(many=True), 'new_users': UserSerializer(many=True),
+                                             'prescription_count': serializers.IntegerField(default=100)}),
+                   '406': OpenApiTypes.STR, '409': OpenApiTypes.STR, '403': serializers.CharField(default='User not admin')}
+    )
     def handle_request(self, request):
         try:
             token = request.data['token']
@@ -26,7 +34,7 @@ class DailyStats(viewsets.ViewSet):
             return HttpResponse('Token expired', status=409)
 
         if not user.isAdmin:
-            return HttpResponse('User not admin', status=409)
+            return HttpResponse('User not admin', status=403)
 
         today = datetime.now().date()
         tomorrow = today + timedelta(1)

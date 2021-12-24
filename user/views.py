@@ -4,18 +4,28 @@ import string
 
 import django
 from django.http import HttpResponse
-from rest_framework import viewsets
+from rest_framework import viewsets, fields
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
+from drf_spectacular.types import OpenApiTypes
 
 from .models import User
 
 
 class Register(viewsets.ViewSet):
+    @extend_schema(
+        request=inline_serializer("register", {'national_code': fields.CharField(default='0022334455'), 'password': fields.CharField(default='password'),
+                                              'is_doctor': fields.BooleanField(default=False), 'name': fields.CharField(default='Ali')}),
+        description="register",
+        responses={'200': OpenApiTypes.STR, '406': OpenApiTypes.STR, '409': OpenApiTypes.STR,
+                    '403': OpenApiTypes.STR}
+    )
     def handle_request(self, request):
         user = User()
         data = request.data
         try:
             user.name = data['name']
             user.national_code, user.password = data['national_code'], hashlib.md5(data['password'].encode('utf-8')).digest()
+            user.isDoctor = data['is_doctor']
             try:
                 user.save()
             except django.db.utils.IntegrityError:
@@ -26,6 +36,13 @@ class Register(viewsets.ViewSet):
 
 
 class Login(viewsets.ViewSet):
+    @extend_schema(
+        request=inline_serializer("login", {'national_code': fields.CharField(default='0022334455'),
+                                              'password': fields.CharField(default='password'),
+                                              }),
+        description="login",
+        responses={'200': OpenApiTypes.STR, '404': OpenApiTypes.STR, '406': OpenApiTypes.STR}
+    )
     def handle_request(self, request):
         try:
             national_code, password = request.data['national_code'], str(request.data['password'])
@@ -48,6 +65,11 @@ class Login(viewsets.ViewSet):
 
 
 class Profile(viewsets.ViewSet):
+    @extend_schema(
+        request=inline_serializer("profile", {'token': fields.CharField(default='token')}),
+        description="get profile",
+        responses={'200': OpenApiTypes.STR, '406': OpenApiTypes.STR, '409': OpenApiTypes.STR}
+    )
     def handle_request(self, request):
         try:
             token = request.data['token']

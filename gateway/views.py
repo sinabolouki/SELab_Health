@@ -1,6 +1,8 @@
 import requests
 from django.http import HttpResponse
-from rest_framework import viewsets
+from rest_framework import viewsets, fields
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
+from drf_spectacular.types import OpenApiTypes
 
 from . import service_consts
 
@@ -13,6 +15,13 @@ failed_attempts = {
 
 
 class API(viewsets.ViewSet):
+
+    @extend_schema(
+        request=inline_serializer("service",
+                                  {'service': fields.ChoiceField(choices=list(service_consts.service_urls.keys()))}, ),
+        description="main gateway api, results vary depending on service",
+    )
+
     def handle_request(self, request):
         try:
             service = request.data["service"]
